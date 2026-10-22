@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StudyFlow — Prototipe Antarmuka Visual & Sistem Komponen (Google Stitch)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            midnight: '#090d16',
+            surface: '#0f172a',
+            surfaceCard: '#1e293b',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #090d16; color: #f8fafc; }
+    .glass-card { background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .glow-emerald { box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.25); }
+    .glow-red { box-shadow: 0 0 25px -5px rgba(239, 68, 68, 0.3); }
+    .glow-indigo { box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.25); }
+  </style>
+</head>
+<body class="min-h-screen pb-16">
+
+  <!-- Top Navbar -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-indigo-600 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-emerald-500/20">
+        🎓
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-white flex items-center gap-2">
+          StudyFlow
+          <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Google Stitch Prototype</span>
+        </h1>
+        <p class="text-xs text-slate-400">Rancangan Antarmuka Visual & Sistem Komponen UI</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="text-xs text-slate-400 hidden sm:inline">User: Budi Santoso</span>
+      <a href="https://github.com/oliksupriadi-exe92/LogicLoop_Project_" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 flex items-center gap-1.5 transition">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub Repository
+      </a>
+    </div>
+  </header>
+
+  <!-- Interactive Screen Switcher Navigation -->
+  <div class="max-w-7xl mx-auto px-6 pt-8">
+    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+      <div class="flex items-center gap-2">
+        <button onclick="switchScreen('dashboard')" id="btn-dashboard" class="px-4 py-2 rounded-xl text-sm font-semibold transition bg-emerald-600 text-white shadow-lg shadow-emerald-900/30">
+          📊 Screen 1: Dashboard
+        </button>
+        <button onclick="switchScreen('tasks')" id="btn-tasks" class="px-4 py-2 rounded-xl text-sm font-semibold transition bg-slate-800 hover:bg-slate-700 text-slate-300">
+          📝 Screen 2: Task Tracker
+        </button>
+        <button onclick="switchScreen('grades')" id="btn-grades" class="px-4 py-2 rounded-xl text-sm font-semibold transition bg-slate-800 hover:bg-slate-700 text-slate-300">
+          🎯 Screen 3: Prediksi UAS
+        </button>
+        <button onclick="switchScreen('tokens')" id="btn-tokens" class="px-4 py-2 rounded-xl text-sm font-semibold transition bg-slate-800 hover:bg-slate-700 text-slate-300">
+          🎨 Design Tokens
+        </button>
+      </div>
+      <div class="text-xs text-slate-400 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-800">
+        Status: <span class="text-emerald-400 font-medium">Production UI Ready</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto px-6 pt-8">
+
+    <!-- SCREEN 1: DASHBOARD -->
+    <section id="screen-dashboard" class="space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-bold text-white">Halo, Budi Santoso 👋</h2>
+          <p class="text-slate-400 text-sm">Berikut ringkasan jadwal kuliah dan tugas akademik Anda hari ini.</p>
+        </div>
+        <div class="px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium">
+          📅 Semester Ganjil 2026/2027
+        </div>
+      </div>
+
+      <!-- 4 KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="glass-card rounded-2xl p-5 glow-indigo">
+          <div class="text-slate-400 text-xs font-medium mb-1">Total SKS Aktif</div>
+          <div class="text-3xl font-extrabold text-white">21 <span class="text-sm font-normal text-slate-400">SKS</span></div>
+          <div class="mt-3 text-xs text-emerald-400 flex items-center gap-1">✓ Beban kuliah optimal</div>
+        </div>
+        <div class="glass-card rounded-2xl p-5 glow-emerald">
+          <div class="text-slate-400 text-xs font-medium mb-1">Progress Tugas</div>
+          <div class="text-3xl font-extrabold text-white">78%</div>
+          <div class="w-full bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
+            <div class="bg-gradient-to-r from-emerald-500 to-indigo-500 h-full rounded-full" style="width: 78%"></div>
+          </div>
+        </div>
+        <div class="glass-card rounded-2xl p-5 glow-red">
+          <div class="text-slate-400 text-xs font-medium mb-1">Tugas Overdue</div>
+          <div class="text-3xl font-extrabold text-red-400">1 <span class="text-sm font-normal text-red-300">Tugas</span></div>
+          <div class="mt-3 text-xs text-red-400 font-medium">⚠️ Butuh tindakan segera</div>
+        </div>
+        <div class="glass-card rounded-2xl p-5 glow-emerald">
+          <div class="text-slate-400 text-xs font-medium mb-1">Kuliah Hari Ini</div>
+          <div class="text-3xl font-extrabold text-white">2 <span class="text-sm font-normal text-slate-400">Mata Kuliah</span></div>
+          <div class="mt-3 text-xs text-indigo-400 flex items-center gap-1">📍 Lab Komputer 3</div>
+        </div>
+      </div>
+
+      <!-- Two column detail -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Jadwal Kuliah -->
+        <div class="lg:col-span-2 glass-card rounded-2xl p-6 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <span>📚</span> Jadwal Kuliah Hari Ini
+            </h3>
+            <span class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300">Kamis</span>
+          </div>
+
+          <div class="space-y-3">
+            <div class="p-4 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-400">IF-301 • 3 SKS</span>
+                <h4 class="text-base font-bold text-white mt-1">Pemrograman Web Modern</h4>
+                <p class="text-xs text-slate-400 mt-0.5">Dosen: Dr. Ir. Hendra Gunawan, M.T. • Ruang Lab 3</p>
+              </div>
+              <div class="text-right">
+                <span class="text-sm font-extrabold text-emerald-400">08:00 - 10:30</span>
+                <span class="block text-xs text-slate-400">Selesai</span>
+              </div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">IF-304 • 3 SKS</span>
+                <h4 class="text-base font-bold text-white mt-1">Basis Data Lanjut</h4>
+                <p class="text-xs text-slate-400 mt-0.5">Dosen: Siti Aminah, S.Kom., M.Cs. • Ruang R-204</p>
+              </div>
+              <div class="text-right">
+                <span class="text-sm font-extrabold text-indigo-400">13:00 - 15:30</span>
+                <span class="block text-xs text-emerald-400 font-semibold">● Berlangsung</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Telegram Reminder Widget -->
+        <div class="glass-card rounded-2xl p-6 space-y-4">
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <span>🤖</span> Bot Telegram
+          </h3>
+          <div class="p-4 rounded-xl bg-indigo-950/40 border border-indigo-500/30 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-indigo-300 font-semibold">@studyflow_logicloop_bot</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Terhubung</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Notifikasi deadline tugas H-3, H-1, & hari-H otomatis terkirim langsung ke akun Telegram Anda.
+            </p>
+            <div class="pt-2 border-t border-indigo-500/20 text-xs text-slate-400">
+              Chat ID: <span class="font-mono text-white">598124091</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 2: TASKS -->
+    <section id="screen-tasks" class="hidden space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-white">Manajemen Tugas Kuliah</h2>
+          <p class="text-slate-400 text-sm">Kalkulasi Auto-Prioritas cerdas berbasis sisa waktu tenggat.</p>
+        </div>
+        <button class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition flex items-center gap-2 shadow-lg shadow-emerald-900/40">
+          <span>+</span> Tambah Tugas Baru
+        </button>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
+        <div class="flex items-center gap-2">
+          <button class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold">Semua (8)</button>
+          <button class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs hover:bg-slate-700">Belum Selesai (5)</button>
+          <button class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs hover:bg-slate-700">Selesai (3)</button>
+          <button class="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold">Terlambat (1)</button>
+        </div>
+        <input type="text" placeholder="Cari judul tugas..." class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-500 w-64 focus:outline-none focus:border-emerald-500">
+      </div>
+
+      <!-- Task Items List -->
+      <div class="space-y-3">
+        <!-- Urgent Overdue Task -->
+        <div class="glass-card rounded-2xl p-4 flex items-center justify-between border-l-4 border-l-red-500">
+          <div class="flex items-center gap-4">
+            <input type="checkbox" class="w-5 h-5 rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-0 cursor-pointer">
+            <div>
+              <div class="flex items-center gap-2">
+                <h4 class="text-base font-bold text-white">Makalah Cloud Computing & Supabase</h4>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 font-bold">🚨 URGENT (< 24 Jam)</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">Basis Data Lanjut • Tenggat: Hari Ini, 23:59 WIB</p>
+            </div>
+          </div>
+          <div class="text-right text-xs text-red-400 font-bold">Mendesak!</div>
+        </div>
+
+        <!-- High Priority Task -->
+        <div class="glass-card rounded-2xl p-4 flex items-center justify-between border-l-4 border-l-amber-500">
+          <div class="flex items-center gap-4">
+            <input type="checkbox" class="w-5 h-5 rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-0 cursor-pointer">
+            <div>
+              <div class="flex items-center gap-2">
+                <h4 class="text-base font-bold text-white">Praktikum Pointer & Linked List C++</h4>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 font-bold">🔴 HIGH (2 Hari Lagi)</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">Struktur Data & Algoritma • Tenggat: Sabtu, 24 Okt 2026</p>
+            </div>
+          </div>
+          <div class="text-right text-xs text-amber-400 font-semibold">2 hari lagi</div>
+        </div>
+
+        <!-- Medium Priority Task -->
+        <div class="glass-card rounded-2xl p-4 flex items-center justify-between border-l-4 border-l-blue-500">
+          <div class="flex items-center gap-4">
+            <input type="checkbox" class="w-5 h-5 rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-0 cursor-pointer">
+            <div>
+              <div class="flex items-center gap-2">
+                <h4 class="text-base font-bold text-white">Review Jurnal Deep Learning NLP</h4>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/40 font-bold">🟡 MEDIUM (5 Hari Lagi)</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">Kecerdasan Buatan • Tenggat: Selasa, 27 Okt 2026</p>
+            </div>
+          </div>
+          <div class="text-right text-xs text-blue-400">5 hari lagi</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 3: GRADES -->
+    <section id="screen-grades" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-bold text-white">Kalkulator Nilai & Prediksi UAS</h2>
+          <p class="text-slate-400 text-sm">Simulator interaktif What-If untuk memprediksi skor minimal ujian.</p>
+        </div>
+      </div>
+
+      <!-- Top GPA Banner -->
+      <div class="glass-card rounded-2xl p-6 glow-emerald flex flex-wrap items-center justify-between gap-6">
+        <div>
+          <span class="text-xs text-emerald-400 font-bold uppercase tracking-wider">Estimasi Semester Ini</span>
+          <div class="text-4xl font-extrabold text-white mt-1">Proyeksi IPK: 3.82 <span class="text-lg text-slate-400">/ 4.00</span></div>
+          <p class="text-xs text-slate-400 mt-1">Predikat: <span class="text-emerald-400 font-semibold">Sangat Memuaskan (Cum Laude Track)</span></p>
+        </div>
+        <div class="text-right">
+          <span class="text-xs text-slate-400">Total Kredit Semester</span>
+          <div class="text-2xl font-bold text-white">21 SKS (7 Mata Kuliah)</div>
+        </div>
+      </div>
+
+      <!-- What-If Simulator Card -->
+      <div class="glass-card rounded-2xl p-6 space-y-5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div>
+            <span class="text-xs px-2.5 py-1 rounded bg-indigo-500/20 text-indigo-400 font-bold">IF-301 • 3 SKS</span>
+            <h3 class="text-xl font-bold text-white mt-1">Algoritma & Pemrograman</h3>
+          </div>
+          <div class="text-right">
+            <span class="text-xs text-slate-400">Target Nilai Huruf:</span>
+            <span class="text-2xl font-black text-emerald-400 ml-2">A</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 text-center">
+          <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60">
+            <span class="text-xs text-slate-400">Kehadiran (10%)</span>
+            <div class="text-lg font-bold text-white mt-1">100</div>
+          </div>
+          <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60">
+            <span class="text-xs text-slate-400">Tugas Mandiri (20%)</span>
+            <div class="text-lg font-bold text-white mt-1">90</div>
+          </div>
+          <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60">
+            <span class="text-xs text-slate-400">UTS (30%)</span>
+            <div class="text-lg font-bold text-white mt-1">85</div>
+          </div>
+          <div class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60">
+            <span class="text-xs text-slate-400">UAS (40%)</span>
+            <div class="text-lg font-bold text-indigo-400 mt-1">Menunggu Ujian</div>
+          </div>
+        </div>
+
+        <!-- Prediction Result Box -->
+        <div class="p-5 rounded-2xl bg-gradient-to-r from-emerald-950/60 to-slate-900 border border-emerald-500/40 glow-emerald flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span class="text-xs text-emerald-400 font-bold uppercase tracking-wider">Hasil Prediksi Nilai Minimal UAS</span>
+            <div class="text-3xl font-extrabold text-white mt-1">81.5 <span class="text-sm font-normal text-slate-300">/ 100</span></div>
+            <p class="text-xs text-slate-300 mt-1">Untuk mencapai target akhir <strong>Nilai A (&ge; 85.0)</strong>, Anda membutuhkan skor minimal 81.5 pada UAS.</p>
+          </div>
+          <div>
+            <span class="px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold inline-block">
+              ✓ Peluang: Sangat Realistis (Achievable)
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 4: DESIGN TOKENS -->
+    <section id="screen-tokens" class="hidden space-y-6">
+      <div class="glass-card rounded-2xl p-6 space-y-6">
+        <h2 class="text-xl font-bold text-white">Google Stitch Design Tokens Specification</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-3">
+            <h3 class="text-sm font-bold text-slate-300">Palet Warna Utama</h3>
+            <div class="flex items-center gap-3"><div class="w-8 h-8 rounded bg-[#090d16] border border-slate-700"></div><span class="text-xs font-mono text-slate-300">#090d16 - Canvas Midnight</span></div>
+            <div class="flex items-center gap-3"><div class="w-8 h-8 rounded bg-[#0f172a] border border-slate-700"></div><span class="text-xs font-mono text-slate-300">#0f172a - Surface Card Slate</span></div>
+            <div class="flex items-center gap-3"><div class="w-8 h-8 rounded bg-[#10b981]"></div><span class="text-xs font-mono text-slate-300">#10b981 - Primary Emerald</span></div>
+            <div class="flex items-center gap-3"><div class="w-8 h-8 rounded bg-[#6366f1]"></div><span class="text-xs font-mono text-slate-300">#6366f1 - Accent Indigo</span></div>
+          </div>
+          <div class="space-y-3">
+            <h3 class="text-sm font-bold text-slate-300">Status & Priority Badges</h3>
+            <div class="flex items-center gap-3"><span class="px-2.5 py-1 rounded bg-red-500/20 text-red-400 text-xs font-bold">URGENT</span><span class="text-xs text-slate-400">< 24 jam / Overdue</span></div>
+            <div class="flex items-center gap-3"><span class="px-2.5 py-1 rounded bg-amber-500/20 text-amber-400 text-xs font-bold">HIGH</span><span class="text-xs text-slate-400">1 - 3 hari lagi</span></div>
+            <div class="flex items-center gap-3"><span class="px-2.5 py-1 rounded bg-blue-500/20 text-blue-400 text-xs font-bold">MEDIUM</span><span class="text-xs text-slate-400">3 - 7 hari lagi</span></div>
+            <div class="flex items-center gap-3"><span class="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">LOW</span><span class="text-xs text-slate-400">> 7 hari lagi</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function switchScreen(screenName) {
+      const screens = ['dashboard', 'tasks', 'grades', 'tokens'];
+      screens.forEach(s => {
+        const el = document.getElementById('screen-' + s);
+        const btn = document.getElementById('btn-' + s);
+        if (s === screenName) {
+          el.classList.remove('hidden');
+          btn.className = 'px-4 py-2 rounded-xl text-sm font-semibold transition bg-emerald-600 text-white shadow-lg shadow-emerald-900/30';
+        } else {
+          el.classList.add('hidden');
+          btn.className = 'px-4 py-2 rounded-xl text-sm font-semibold transition bg-slate-800 hover:bg-slate-700 text-slate-300';
+        }
+      });
+    }
+  </script>
+</body>
+</html>
