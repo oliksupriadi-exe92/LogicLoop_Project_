@@ -10,7 +10,7 @@
 | :--- | :--- | :---: | :--- |
 | **Fase 1** | **Setup, Database & Arsitektur** | ✅ Selesai | Next.js 16 (App Router), Prisma ORM, SQLite (`dev.db`), TypeScript ketat, Landing Page interaktif. |
 | **Fase 2** | **Autentikasi & Keamanan** | ✅ Selesai | Stateless JWT session (`jose`), password hashing (`bcryptjs`), cookie HTTP-Only, sliding-window rate limiting, Middleware route guard. |
-| **Fase 3** | **CRUD Mata Kuliah & Tugas** | ✅ Selesai | Manajemen SKS, jadwal, dosen, ruangan, tag warna. Filter status tugas, pencarian instan, dan auto-prioritas berbasis deadline. |
+| **Fase 3** | **CRUD Mata Kuliah & Tugas** | ✅ Selesai | Manajemen SKS, jadwal, dosen, ruangan, tag warna. Filter status tugas, pencarian instan, auto-prioritas berbasis deadline, **Papan Kanban Interaktif**, **Matriks Jadwal Mingguan**, dan **Ekspor Kalender iCal (.ics)**. |
 | **Fase 4** | **Dashboard Analitik Terpadu** | ✅ Selesai | KPI Card (SKS, Progress Tugas %, Tugas Terlambat, Jadwal Hari Ini), Jadwal Kuliah Hari Ini, Alert Overdue, & Ringkasan per Mata Kuliah. |
 | **Fase 5** | **Kalkulator Nilai & Prediksi UAS** | ✅ Selesai | Hitung nilai akhir berbasis bobot kustom (10%-20%-30%-40%), simulasi target nilai huruf (A, B+, B), prediksi nilai minimal UAS, dan simulator interaktif What-If. |
 | **Fase 6** | **Pengingat Deadline Otomatis** | ✅ Selesai | Otomasi pengingat H-3, H-1, dan hari-H via Telegram Bot (@studyflow_logicloop_bot) langsung ke HP/Laptop mahasiswa. |
@@ -87,7 +87,7 @@ Gunakan kredensial berikut untuk menguji seluruh fitur yang sudah aktif:
 - `GET /api/tasks` — Daftar tugas dengan filter (`courseId`, `status`, `priority`, `search`)
 - `POST /api/tasks` — Tambah tugas baru (auto-prioritas terhitung otomatis)
 - `PUT /api/tasks/[id]` — Perbarui data tugas
-- `PATCH /api/tasks/[id]` — Toggle cepat status tugas (`TODO` <-> `COMPLETED`)
+- `PATCH /api/tasks/[id]` — Toggle cepat status tugas (`TODO` <-> `IN_PROGRESS` <-> `COMPLETED`)
 - `DELETE /api/tasks/[id]` — Hapus tugas
 
 ### Kalkulator Nilai & Prediksi UAS (Fase 5)
@@ -181,4 +181,9 @@ Solusi yang diterapkan:
 2. **Algoritma Waktu Relatif**: Memanfaatkan fungsi utilitas kalkulasi selisih jam deadline untuk klasifikasi prioritas otomatis (Urgent, High, Medium, Low) tanpa beban komputasi berat.
 3. **Penyimpanan Chat ID Personal**: Menyimpan Telegram Chat ID unik pada profil pengguna di database SQLite/PostgreSQL melalui Prisma, sehingga satu bot sentral dapat mendistribusikan notifikasi personal via REST endpoint.
 4. **Konfigurasi Strict TypeScript**: Menerapkan validasi skema data Zod di seluruh rute API untuk menjamin kestabilan sistem.
+
+### 🌟 Fitur Unggulan Branch `feature`:
+1. **Papan Kanban Interaktif (Interactive Kanban Board)**: Tampilan visual alur kerja tugas dengan 3 kolom (*Belum Dikerjakan*, *Sedang Dikerjakan*, *Selesai*), dilengkapi dengan tombol transisi cepat status, penghitung tugas per kolom, dan badge auto-prioritas dinamis.
+2. **Matriks Jadwal Kuliah Mingguan (Weekly Timetable Matrix)**: Representasi kalender visual Senin — Minggu yang secara otomatis menyorot hari aktif saat ini (*HARI INI*), jam perkuliahan, ruangan, dosen pengampu, dan SKS.
+3. **Ekspor Jadwal ke Format iCal (.ics)**: Otomasi pembuatan berkas RFC 5545 iCalendar untuk kemudahan sinkronisasi jadwal kuliah langsung ke Google Calendar, Apple Calendar, maupun Microsoft Outlook.
 

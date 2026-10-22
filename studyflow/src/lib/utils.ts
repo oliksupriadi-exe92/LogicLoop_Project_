@@ -210,3 +210,93 @@ export function calculateGpa(courses: { credits: number; gpaPoint: number }[]): 
   const gpa = Math.round((totalPoints / totalCredits) * 100) / 100;
   return { gpa, totalCredits };
 }
+
+export interface ICSCourseItem {
+  name: string;
+  code?: string | null;
+  lecturer: string;
+  room?: string | null;
+  dayOfWeek: number; // 1 (Senin) - 7 (Minggu)
+  startTime: string; // "HH:mm"
+  endTime: string;   // "HH:mm"
+}
+
+/**
+ * OTOMASI FITUR: Ekspor Jadwal Kuliah ke Format iCalendar (.ics) RFC 5545
+ * Memungkinkan mahasiswa mengimpor seluruh jadwal kuliah mingguan ke Google Calendar, Apple Calendar, atau Outlook.
+ */
+export function generateICSContent(courses: ICSCourseItem[]): string {
+  const dayMap: Record<number, string> = {
+    1: "MO", 2: "TU", 3: "WE", 4: "TH", 5: "FR", 6: "SA", 7: "SU"
+  };
+
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}00Z`;
+
+  const icsLines: string[] = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//StudyFlow//Academic Timetable//ID",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "X-WR-CALNAME:Jadwal Kuliah StudyFlow",
+    "X-WR-TIMEZONE:Asia/Jakarta"
+  ];
+
+  courses.forEach((c, idx) => {
+    const dayStr = dayMap[c.dayOfWeek] || "MO";
+    const [startH, startM] = (c.startTime || "08:00").split(":").map((v) => parseInt(v, 10) || 0);
+    const [endH, endM] = (c.endTime || "10:00").split(":").map((v) => parseInt(v, 10) || 0);
+
+    // Hitung tanggal kejadian terdekat yang cocok dengan hari c.dayOfWeek
+    // JS getDay(): 0 = Minggu, 1 = Senin, ..., 6 = Sabtu
+    const jsCurrentDay = now.getDay() === 0 ? 7 : now.getDay();
+    let daysDiff = c.dayOfWeek - jsCurrentDay;
+    if (daysDiff < 0) daysDiff += 7;
+
+    const eventDate = new Date(now);
+    eventDate.setDate(now.getDate() + daysDiff);
+
+    const y = eventDate.getFullYear();
+    const m = pad(eventDate.getMonth() + 1);
+    const d = pad(eventDate.getDate());
+
+    const dtStart = `${y}${m}${d}T${pad(startH)}${pad(startM)}00`;
+    const dtEnd = `${y}${m}${d}T${pad(endH)}${pad(endM)}00`;
+    const uid = `studyflow-${idx}-${Date.now()}@studyflow.local`;
+
+    icsLines.push(
+      "BEGIN:VEVENT",
+      `UID:${uid}`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART;TZID=Asia/Jakarta:${dtStart}`,
+      `DTEND;TZID=Asia/Jakarta:${dtEnd}`,
+      `RRULE:FREQ=WEEKLY;BYDAY=${dayStr}`,
+      `SUMMARY:${c.name}${c.code ? ` (${c.code})` : ""}`,
+      `DESCRIPTION:Dosen: ${c.lecturer || "-"} | Ruangan: ${c.room || "-"}`,
+      `LOCATION:${c.room || "Ruang Kelas"}`,
+      "STATUS:CONFIRMED",
+      "END:VEVENT"
+    );
+  });
+
+  icsLines.push("END:VCALENDAR");
+  return icsLines.join("\r\n");
+}
+
+/**
+ * Memicu pengunduhan file .ics di sisi browser klien
+ */
+export function downloadICSFile(courses: ICSCourseItem[], filename = "jadwal_kuliah_studyflow.ics") {
+  const content = generateICSContent(courses);
+  const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}

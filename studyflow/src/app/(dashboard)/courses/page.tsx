@@ -16,11 +16,14 @@ import {
   X,
   ArrowRight,
   Sparkles,
+  Download,
+  LayoutGrid,
+  CalendarDays,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { getIndonesianDay } from "@/lib/utils";
+import { getIndonesianDay, downloadICSFile } from "@/lib/utils";
 
 interface Course {
   id: string;
@@ -54,6 +57,15 @@ export default function CoursesPage() {
   const [courses, setCourses] = React.useState<Course[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [selectedSemester, setSelectedSemester] = React.useState<string>("ALL");
+  const [viewMode, setViewMode] = React.useState<"cards" | "timetable">("cards");
+
+  const handleExportICS = () => {
+    if (courses.length === 0) {
+      alert("Belum ada mata kuliah untuk diekspor.");
+      return;
+    }
+    downloadICSFile(courses, "jadwal_kuliah_studyflow.ics");
+  };
 
   // State Modal Form
   const [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -253,10 +265,52 @@ export default function CoursesPage() {
             </p>
           </div>
 
-          <Button onClick={handleOpenCreateModal} className="gap-2 self-start sm:self-auto shadow-indigo-500/25">
-            <Plus className="w-4 h-4" />
-            <span>Tambah Mata Kuliah</span>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+            {/* VIEW SWITCHER */}
+            <div className="flex items-center p-1 bg-zinc-900 border border-zinc-800 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setViewMode("cards")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === "cards"
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>Kartu MK</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("timetable")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  viewMode === "timetable"
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                <CalendarDays className="w-3.5 h-3.5" />
+                <span>Jadwal Mingguan</span>
+              </button>
+            </div>
+
+            {/* ICAL EXPORT BUTTON */}
+            <Button
+              onClick={handleExportICS}
+              variant="outline"
+              disabled={courses.length === 0}
+              className="gap-2 border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:bg-zinc-800 shadow-sm"
+              title="Ekspor ke Google Calendar / Apple Calendar (.ics)"
+            >
+              <Download className="w-4 h-4 text-indigo-400" />
+              <span>Ekspor iCal</span>
+            </Button>
+
+            <Button onClick={handleOpenCreateModal} className="gap-2 shadow-indigo-500/25">
+              <Plus className="w-4 h-4" />
+              <span>Tambah Mata Kuliah</span>
+            </Button>
+          </div>
         </div>
 
         {/* STATS OVERVIEW CARDS */}
@@ -321,7 +375,7 @@ export default function CoursesPage() {
               <span>Tambah Mata Kuliah Pertama</span>
             </Button>
           </Card>
-        ) : (
+        ) : viewMode === "cards" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {courses.map((course) => (
               <Card
@@ -408,6 +462,126 @@ export default function CoursesPage() {
                 </div>
               </Card>
             ))}
+          </div>
+        ) : (
+          /* WEEKLY TIMETABLE MATRIX */
+          <div className="space-y-4">
+            <div className="p-3 bg-zinc-900/60 border border-zinc-800/80 rounded-xl flex items-center justify-between text-xs text-zinc-400">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="w-4 h-4 text-indigo-400" />
+                <span>Matriks Jadwal Kuliah Mingguan (Senin — Minggu)</span>
+              </div>
+              <span className="text-[11px] text-zinc-500">
+                Waktu Indonesia Barat (WIB)
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-3 items-start">
+              {[1, 2, 3, 4, 5, 6, 7].map((dayNum) => {
+                const dayCourses = courses
+                  .filter((c) => c.dayOfWeek === dayNum)
+                  .sort((a, b) => a.startTime.localeCompare(b.startTime));
+                const currentDayNum = new Date().getDay() === 0 ? 7 : new Date().getDay();
+                const isToday = currentDayNum === dayNum;
+
+                return (
+                  <div
+                    key={dayNum}
+                    className={`rounded-2xl border p-3.5 flex flex-col gap-3 transition-all ${
+                      isToday
+                        ? "bg-indigo-950/25 border-indigo-500/50 shadow-lg shadow-indigo-500/10"
+                        : "bg-zinc-900/50 border-zinc-800/80"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            isToday ? "bg-indigo-400 animate-pulse" : "bg-zinc-600"
+                          }`}
+                        />
+                        <h4 className="font-bold text-xs text-zinc-200">
+                          {getIndonesianDay(dayNum)}
+                        </h4>
+                      </div>
+                      {isToday && (
+                        <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-600 text-white uppercase tracking-wider">
+                          Hari Ini
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="space-y-2.5 min-h-[120px]">
+                      {dayCourses.length === 0 ? (
+                        <div className="py-8 text-center text-[11px] text-zinc-600 border border-dashed border-zinc-800/50 rounded-xl">
+                          Libur / Kosong
+                        </div>
+                      ) : (
+                        dayCourses.map((c) => (
+                          <div
+                            key={c.id}
+                            className="p-3 rounded-xl bg-zinc-950/90 border border-zinc-800/80 hover:border-zinc-700 space-y-2 transition-all relative overflow-hidden group shadow-sm"
+                          >
+                            <div
+                              className="w-1 absolute left-0 top-0 bottom-0"
+                              style={{ backgroundColor: c.color || "#6366f1" }}
+                            />
+                            <div className="pl-1 space-y-1.5">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="font-mono text-[10px] text-indigo-400 font-semibold bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-900/40">
+                                  {c.startTime} - {c.endTime}
+                                </span>
+                                <span className="text-[10px] font-bold text-zinc-400">
+                                  {c.credits} SKS
+                                </span>
+                              </div>
+                              <h5 className="font-bold text-xs text-white line-clamp-2 leading-tight">
+                                {c.name}
+                              </h5>
+                              <div className="text-[10px] text-zinc-400 truncate flex items-center gap-1">
+                                <User className="w-2.5 h-2.5 text-zinc-500 shrink-0" />
+                                <span className="truncate">{c.lecturer}</span>
+                              </div>
+                              {c.room && (
+                                <div className="text-[10px] text-zinc-500 truncate flex items-center gap-1">
+                                  <MapPin className="w-2.5 h-2.5 shrink-0" />
+                                  <span className="truncate">{c.room}</span>
+                                </div>
+                              )}
+                              <div className="pt-1 border-t border-zinc-900 flex items-center justify-between">
+                                <Link
+                                  href={`/tasks?courseId=${c.id}`}
+                                  className="text-[10px] font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-0.5"
+                                >
+                                  <span>{c._count?.tasks ?? 0} Tugas</span>
+                                  <ArrowRight className="w-2.5 h-2.5" />
+                                </Link>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={() => handleOpenEditModal(c)}
+                                    className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800"
+                                    title="Edit"
+                                  >
+                                    <Edit2 className="w-2.5 h-2.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteCourse(c.id, c.name)}
+                                    className="p-1 rounded text-rose-400 hover:text-rose-300 hover:bg-rose-950/40"
+                                    title="Hapus"
+                                  >
+                                    <Trash2 className="w-2.5 h-2.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
