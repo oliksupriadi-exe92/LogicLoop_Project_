@@ -1,0 +1,178 @@
+// StudyFlow - Prisma Schema
+// Aplikasi Otomasi Kuliah untuk Mahasiswa
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// --------------------------------------------------------
+// ENUMS
+// --------------------------------------------------------
+
+enum Priority {
+  LOW      // Rendah (deadline > 7 hari)
+  MEDIUM   // Sedang (deadline 3-7 hari)
+  HIGH     // Tinggi (deadline 1-3 hari)
+  URGENT   // Sangat Mendesak (deadline < 24 jam / hari-H)
+}
+
+enum TaskStatus {
+  TODO        // Belum dikerjakan
+  IN_PROGRESS // Sedang diproses
+  COMPLETED   // Selesai
+}
+
+enum ReminderType {
+  EMAIL
+  TELEGRAM
+  SYSTEM
+}
+
+enum ReminderTiming {
+  D_MINUS_3 // H-3 sebelum deadline
+  D_MINUS_1 // H-1 sebelum deadline
+  D_DAY     // Hari-H (pagi hari / jam tertentu)
+  CUSTOM    // Waktu spesifik yang ditentukan pengguna
+}
+
+// --------------------------------------------------------
+// MODELS
+// --------------------------------------------------------
+
+/// Model Pengguna (Mahasiswa)
+model User {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  password  String    // Hashed with bcrypt
+  avatar    String?
+  role      String    @default("STUDENT")
+  
+  // Preferensi notifikasi
+  telegramChatId String?
+  emailNotification Boolean @default(true)
+  telegramNotification Boolean @default(false)
+
+  // Relasi
+  courses   Course[]
+  tasks     Task[]
+  reminders Reminder[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([email])
+  @@map("users")
+}
+
+/// Model Mata Kuliah
+model Course {
+  id          String   @id @default(uuid())
+  userId      String
+  name        String   // Nama Mata Kuliah
+  code        String?  // Kode MK (e.g., IF2101)
+  lecturer    String   // Nama Dosen Pengampu
+  credits     Int      // Bobot SKS (e.g., 2, 3, 4)
+  semester    Int      // Semester (e.g., 1 sampai 8)
+  dayOfWeek   Int      // Hari kuliah: 1 (Senin) - 7 (Minggu)
+  startTime   String   // Jam mulai (Format "HH:mm", e.g., "08:00")
+  endTime     String   // Jam selesai (Format "HH:mm", e.g., "10:30")
+  room        String?  // Ruangan kuliah / link meeting
+  color       String?  // Hex color untuk tampilan kalender (e.g., "#6366f1")
+  targetGrade String?  @default("A") // Target nilai: A, AB, B, dsb.
+
+  // Relasi
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks           Task[]
+  gradeComponents GradeComponent[]
+  reminders       Reminder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, semester])
+  @@index([userId, dayOfWeek])
+  @@map("courses")
+}
+
+/// Model Tugas Kuliah
+model Task {
+  id          String     @id @default(uuid())
+  userId      String
+  courseId    String
+  title       String     // Judul Tugas
+  description String?    // Deskripsi detail / instruksi tugas
+  deadline    DateTime   // Batas waktu pengumpulan
+  priority    Priority   @default(MEDIUM)
+  status      TaskStatus @default(TODO)
+  completedAt DateTime?  // Timestamp saat tugas diselesaikan
+
+  // Relasi
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  reminders Reminder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+  @@index([deadline])
+  @@index([userId, status, deadline])
+  @@map("tasks")
+}
+
+/// Model Komponen Nilai per Mata Kuliah
+/// Default bobot: Presensi 10%, Tugas Mandiri 20%, UTS 30%, UAS 40% (total = 100%)
+model GradeComponent {
+  id        String   @id @default(uuid())
+  courseId  String
+  name      String   // Nama komponen: "Presensi", "Tugas Mandiri", "UTS", "UAS", atau kustom
+  weight    Float    // Persentase bobot (e.g., 10.0, 20.0, 30.0, 40.0)
+  score     Float?   // Nilai yang diperoleh (0 - 100), null jika belum ada nilai
+  maxScore  Float    @default(100.0)
+
+  // Relasi
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+  @@map("grade_components")
+}
+
+/// Model Pengingat / Reminder Otomasi
+model Reminder {
+  id        String         @id @default(uuid())
+  userId    String
+  taskId    String?
+  courseId  String?
+  type      ReminderType   @default(EMAIL)
+  timing    ReminderTiming @default(D_MINUS_1)
+  remindAt  DateTime       // Waktu alarm/notifikasi harus dikirimkan
+  isSent    Boolean        @default(false)
+  sentAt    DateTime?
+  message   String?        // Pesan kustom pengingat
+
+  // Relasi
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task   Task?   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  course Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([taskId])
+  @@index([courseId])
+  @@index([remindAt, isSent])
+  @@map("reminders")
+}

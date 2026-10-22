@@ -1,0 +1,10 @@
+{
+  "extends": "./studyflow/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "./studyflow",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["studyflow/**/*"]
+}

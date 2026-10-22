@@ -1,0 +1,11 @@
+{
+  "name": "studyflow-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix studyflow run dev",
+    "build": "npm --prefix studyflow run build",
+    "start": "npm --prefix studyflow run start",
+    "lint": "npm --prefix studyflow run lint"
+  }
+}
