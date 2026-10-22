@@ -16,10 +16,13 @@ import {
   Save,
   Check,
   AlertCircle,
+  Download,
+  FileText,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getAcademicHonor, downloadGradeReport } from "@/lib/utils";
 
 interface GradeComponentData {
   id?: string;
@@ -309,6 +312,11 @@ export default function GradesPage() {
     0
   );
 
+  const handleExportGrades = () => {
+    if (courses.length === 0) return;
+    downloadGradeReport(courses, summary);
+  };
+
   if (isLoading) {
     return (
       <AppShell>
@@ -345,6 +353,17 @@ export default function GradesPage() {
                 <span>{feedbackMessage}</span>
               </span>
             )}
+
+            <Button
+              onClick={handleExportGrades}
+              variant="outline"
+              disabled={courses.length === 0}
+              className="gap-2 border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:bg-zinc-800 shadow-sm text-xs"
+              title="Unduh laporan proyeksi nilai akademik (.txt)"
+            >
+              <Download className="w-4 h-4 text-indigo-400" />
+              <span>Ekspor Laporan Nilai</span>
+            </Button>
           </div>
         </div>
 
@@ -366,6 +385,15 @@ export default function GradesPage() {
               <div className="text-3xl font-black text-indigo-300">
                 {summary?.projectedGpa?.toFixed(2) ?? "4.00"}{" "}
                 <span className="text-xs font-semibold text-zinc-400">/ 4.00</span>
+              </div>
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <span
+                  className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md border ${
+                    getAcademicHonor(summary?.projectedGpa ?? 4.0).badgeColor
+                  }`}
+                >
+                  {getAcademicHonor(summary?.projectedGpa ?? 4.0).predicate}
+                </span>
               </div>
               <p className="text-[11px] text-zinc-400 mt-1">
                 Jika semua target nilai huruf tercapai

@@ -210,3 +210,208 @@ export function calculateGpa(courses: { credits: number; gpaPoint: number }[]): 
   const gpa = Math.round((totalPoints / totalCredits) * 100) / 100;
   return { gpa, totalCredits };
 }
+
+export interface ICSCourseItem {
+  name: string;
+  code?: string | null;
+  lecturer: string;
+  room?: string | null;
+  dayOfWeek: number; // 1 (Senin) - 7 (Minggu)
+  startTime: string; // "HH:mm"
+  endTime: string;   // "HH:mm"
+}
+
+/**
+ * OTOMASI FITUR: Ekspor Jadwal Kuliah ke Format iCalendar (.ics) RFC 5545
+ * Memungkinkan mahasiswa mengimpor seluruh jadwal kuliah mingguan ke Google Calendar, Apple Calendar, atau Outlook.
+ */
+export function generateICSContent(courses: ICSCourseItem[]): string {
+  const dayMap: Record<number, string> = {
+    1: "MO", 2: "TU", 3: "WE", 4: "TH", 5: "FR", 6: "SA", 7: "SU"
+  };
+
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}00Z`;
+
+  const icsLines: string[] = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//StudyFlow//Academic Timetable//ID",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "X-WR-CALNAME:Jadwal Kuliah StudyFlow",
+    "X-WR-TIMEZONE:Asia/Jakarta"
+  ];
+
+  courses.forEach((c, idx) => {
+    const dayStr = dayMap[c.dayOfWeek] || "MO";
+    const [startH, startM] = (c.startTime || "08:00").split(":").map((v) => parseInt(v, 10) || 0);
+    const [endH, endM] = (c.endTime || "10:00").split(":").map((v) => parseInt(v, 10) || 0);
+
+    // Hitung tanggal kejadian terdekat yang cocok dengan hari c.dayOfWeek
+    // JS getDay(): 0 = Minggu, 1 = Senin, ..., 6 = Sabtu
+    const jsCurrentDay = now.getDay() === 0 ? 7 : now.getDay();
+    let daysDiff = c.dayOfWeek - jsCurrentDay;
+    if (daysDiff < 0) daysDiff += 7;
+
+    const eventDate = new Date(now);
+    eventDate.setDate(now.getDate() + daysDiff);
+
+    const y = eventDate.getFullYear();
+    const m = pad(eventDate.getMonth() + 1);
+    const d = pad(eventDate.getDate());
+
+    const dtStart = `${y}${m}${d}T${pad(startH)}${pad(startM)}00`;
+    const dtEnd = `${y}${m}${d}T${pad(endH)}${pad(endM)}00`;
+    const uid = `studyflow-${idx}-${Date.now()}@studyflow.local`;
+
+    icsLines.push(
+      "BEGIN:VEVENT",
+      `UID:${uid}`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART;TZID=Asia/Jakarta:${dtStart}`,
+      `DTEND;TZID=Asia/Jakarta:${dtEnd}`,
+      `RRULE:FREQ=WEEKLY;BYDAY=${dayStr}`,
+      `SUMMARY:${c.name}${c.code ? ` (${c.code})` : ""}`,
+      `DESCRIPTION:Dosen: ${c.lecturer || "-"} | Ruangan: ${c.room || "-"}`,
+      `LOCATION:${c.room || "Ruang Kelas"}`,
+      "STATUS:CONFIRMED",
+      "END:VEVENT"
+    );
+  });
+
+  icsLines.push("END:VCALENDAR");
+  return icsLines.join("\r\n");
+}
+
+/**
+ * Memicu pengunduhan file .ics di sisi browser klien
+ */
+export function downloadICSFile(courses: ICSCourseItem[], filename = "jadwal_kuliah_studyflow.ics") {
+  const content = generateICSContent(courses);
+  const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Menghitung predikat kelulusan akademik berdasarkan IPK (standar perguruan tinggi Indonesia)
+ */
+export function getAcademicHonor(gpa: number): {
+  predicate: string;
+  badgeColor: string;
+  description: string;
+} {
+  if (gpa >= 3.51) {
+    return {
+      predicate: "Dengan Pujian (Cum Laude)",
+      badgeColor: "bg-amber-500/15 text-amber-300 border-amber-500/40",
+      description: "Prestasi akademik luar biasa dengan kehormatan tertinggi.",
+    };
+  }
+  if (gpa >= 3.01) {
+    return {
+      predicate: "Sangat Memuaskan",
+      badgeColor: "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
+      description: "Performa perkuliahan sangat baik dan konsisten di atas rata-rata.",
+    };
+  }
+  if (gpa >= 2.76) {
+    return {
+      predicate: "Memuaskan",
+      badgeColor: "bg-blue-500/15 text-blue-300 border-blue-500/40",
+      description: "Performa perkuliahan memenuhi kualifikasi sarjana dengan baik.",
+    };
+  }
+  return {
+    predicate: "Cukup",
+    badgeColor: "bg-zinc-500/15 text-zinc-300 border-zinc-500/40",
+    description: "Perlu peningkatan nilai pada semester berjalan atau remedial.",
+  };
+}
+
+/**
+ * Menghasilkan dan mengunduh laporan proyeksi nilai dan target UAS dalam format teks rapi
+ */
+export function downloadGradeReport(
+  courses: Array<{
+    name: string;
+    code?: string | null;
+    lecturer: string;
+    credits: number;
+    targetGrade: string;
+    currentScore: number;
+    currentGradeInfo: { letter: string; point: number };
+    prediction: { requiredScore: number; isAchievable: boolean; message: string } | null;
+    components: Array<{ name: string; weight: number; score: number | null }>;
+  }>,
+  summary: {
+    totalCourses: number;
+    totalCredits: number;
+    currentGpa: number;
+    projectedGpa: number;
+  } | null,
+  filename = "laporan_proyeksi_nilai_studyflow.txt"
+) {
+  const lines: string[] = [
+    "==================================================================",
+    "          STUDYFLOW — LAPORAN PROYEKSI & SIMULATOR NILAI AKADEMIK",
+    "==================================================================",
+    `Tanggal Ekspor : ${new Date().toLocaleString("id-ID")}`,
+    `Total Mata Kuliah : ${summary?.totalCourses ?? courses.length} MK`,
+    `Total Beban SKS   : ${summary?.totalCredits ?? 0} SKS`,
+    `IPK Berjalan      : ${summary?.currentGpa?.toFixed(2) ?? "0.00"} / 4.00`,
+    `Proyeksi IPK Akhir: ${summary?.projectedGpa?.toFixed(2) ?? "0.00"} / 4.00`,
+    `Predikat Akademik : ${getAcademicHonor(summary?.projectedGpa ?? 0).predicate}`,
+    "==================================================================",
+    "",
+    "RINCIAN MATA KULIAH & PREDIKSI UAS:",
+    "------------------------------------------------------------------"
+  ];
+
+  courses.forEach((c, idx) => {
+    lines.push(
+      `${idx + 1}. ${c.name}${c.code ? ` (${c.code})` : ""} — ${c.credits} SKS`,
+      `   Dosen Pengampu : ${c.lecturer || "-"}`,
+      `   Nilai Saat Ini : ${c.currentScore.toFixed(1)} (${c.currentGradeInfo.letter})`,
+      `   Target Huruf   : ${c.targetGrade}`,
+      `   Prediksi UAS   : ${c.prediction ? c.prediction.message : "Belum terhitung"}`
+    );
+
+    if (c.components && c.components.length > 0) {
+      lines.push("   Komponen Nilai :");
+      c.components.forEach((comp) => {
+        lines.push(
+          `     - ${comp.name} (Bobot ${comp.weight}%): ${comp.score !== null ? comp.score : "Belum Dinilai"}`
+        );
+      });
+    }
+    lines.push("");
+  });
+
+  lines.push(
+    "------------------------------------------------------------------",
+    "Dihasilkan secara otomatis oleh StudyFlow (LogicLoop Project)",
+    "Buka platform di: http://localhost:3000/grades",
+    "=================================================================="
+  );
+
+  const textContent = lines.join("\r\n");
+  const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+

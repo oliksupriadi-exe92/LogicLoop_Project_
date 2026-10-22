@@ -15,6 +15,10 @@ import {
   X,
   BookOpen,
   Zap,
+  Columns3,
+  List,
+  ArrowRight,
+  ArrowLeft,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
@@ -54,6 +58,9 @@ function TasksContent() {
   const [tasks, setTasks] = React.useState<Task[]>([]);
   const [courses, setCourses] = React.useState<CourseOption[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+
+  // View Mode: List vs Kanban Board
+  const [viewMode, setViewMode] = React.useState<"list" | "kanban">("list");
 
   // Filter States
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -242,6 +249,24 @@ function TasksContent() {
     }
   };
 
+  const handleSetStatus = async (task: Task, nextStatus: TaskStatus) => {
+    // Optimistic UI update
+    setTasks((prev) =>
+      prev.map((t) => (t.id === task.id ? { ...t, status: nextStatus } : t))
+    );
+
+    try {
+      await fetch(`/api/tasks/${task.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      refreshTasks();
+    } catch {
+      refreshTasks();
+    }
+  };
+
   const handleDeleteTask = async (id: string, taskTitle: string) => {
     if (!confirm(`Hapus tugas "${taskTitle}"?`)) return;
 
@@ -277,14 +302,44 @@ function TasksContent() {
           </p>
         </div>
 
-        <Button
-          onClick={handleOpenCreateModal}
-          disabled={courses.length === 0}
-          className="gap-2 self-start sm:self-auto shadow-indigo-500/25"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Tambah Tugas Baru</span>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+          {/* VIEW SWITCHER */}
+          <div className="flex items-center p-1 bg-zinc-900 border border-zinc-800 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                viewMode === "list"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              <List className="w-3.5 h-3.5" />
+              <span>Daftar</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("kanban")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                viewMode === "kanban"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              <Columns3 className="w-3.5 h-3.5" />
+              <span>Kanban</span>
+            </button>
+          </div>
+
+          <Button
+            onClick={handleOpenCreateModal}
+            disabled={courses.length === 0}
+            className="gap-2 shadow-indigo-500/25"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Tambah Tugas Baru</span>
+          </Button>
+        </div>
       </div>
 
       {/* STATS TILES */}
@@ -422,7 +477,7 @@ function TasksContent() {
             <span>Tambah Tugas Baru</span>
           </Button>
         </Card>
-      ) : (
+      ) : viewMode === "list" ? (
         <div className="space-y-3">
           {tasks.map((task) => {
             const relDeadline = getRelativeDeadline(task.deadline);
@@ -522,6 +577,280 @@ function TasksContent() {
               </div>
             );
           })}
+        </div>
+      ) : (
+        /* KANBAN BOARD VIEW */
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+          {/* KOLOM 1: TODO */}
+          <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-400" />
+                <h3 className="font-bold text-sm text-zinc-200">Belum Dikerjakan</h3>
+              </div>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 font-semibold">
+                {tasks.filter((t) => t.status === "TODO").length}
+              </span>
+            </div>
+
+            <div className="space-y-3 min-h-[160px]">
+              {tasks.filter((t) => t.status === "TODO").length === 0 ? (
+                <div className="py-10 text-center text-xs text-zinc-500 border border-dashed border-zinc-800/60 rounded-xl">
+                  Tidak ada tugas belum dikerjakan
+                </div>
+              ) : (
+                tasks
+                  .filter((t) => t.status === "TODO")
+                  .map((task) => {
+                    const relDeadline = getRelativeDeadline(task.deadline);
+                    return (
+                      <div
+                        key={task.id}
+                        className="bg-zinc-950/80 border border-zinc-800/90 hover:border-zinc-700 rounded-xl p-3.5 space-y-3 shadow-sm transition-all"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-md text-white"
+                            style={{ backgroundColor: task.course.color || "#6366f1" }}
+                          >
+                            {task.course.name}
+                          </span>
+                          <Badge priority={task.priority} />
+                        </div>
+
+                        <div>
+                          <h4 className="text-sm font-bold text-white line-clamp-2">
+                            {task.title}
+                          </h4>
+                          {task.description && (
+                            <p className="text-xs text-zinc-400 mt-1 line-clamp-2">
+                              {task.description}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Clock className="w-3.5 h-3.5 text-zinc-500" />
+                          <span
+                            className={`font-medium text-[11px] ${
+                              relDeadline.isOverdue
+                                ? "text-rose-400"
+                                : relDeadline.hoursRemaining <= 24
+                                ? "text-amber-400"
+                                : "text-zinc-400"
+                            }`}
+                          >
+                            {relDeadline.text}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-zinc-900 gap-2">
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleOpenEditModal(task)}
+                              className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800"
+                              title="Edit"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTask(task.id, task.title)}
+                              className="p-1 rounded text-rose-400 hover:text-rose-300 hover:bg-rose-950/40"
+                              title="Hapus"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleSetStatus(task, "IN_PROGRESS")}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-indigo-600/20 text-indigo-300 hover:bg-indigo-600 hover:text-white transition-all border border-indigo-500/30"
+                            title="Mulai kerjakan tugas ini"
+                          >
+                            <span>Mulai</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+              )}
+            </div>
+          </div>
+
+          {/* KOLOM 2: IN_PROGRESS */}
+          <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                <h3 className="font-bold text-sm text-zinc-200">Sedang Dikerjakan</h3>
+              </div>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-950/60 text-amber-300 font-semibold border border-amber-800/40">
+                {tasks.filter((t) => t.status === "IN_PROGRESS").length}
+              </span>
+            </div>
+
+            <div className="space-y-3 min-h-[160px]">
+              {tasks.filter((t) => t.status === "IN_PROGRESS").length === 0 ? (
+                <div className="py-10 text-center text-xs text-zinc-500 border border-dashed border-zinc-800/60 rounded-xl">
+                  Tidak ada tugas sedang dikerjakan
+                </div>
+              ) : (
+                tasks
+                  .filter((t) => t.status === "IN_PROGRESS")
+                  .map((task) => {
+                    const relDeadline = getRelativeDeadline(task.deadline);
+                    return (
+                      <div
+                        key={task.id}
+                        className="bg-zinc-950/80 border border-amber-900/40 hover:border-amber-700/60 rounded-xl p-3.5 space-y-3 shadow-sm transition-all"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-md text-white"
+                            style={{ backgroundColor: task.course.color || "#6366f1" }}
+                          >
+                            {task.course.name}
+                          </span>
+                          <Badge priority={task.priority} />
+                        </div>
+
+                        <div>
+                          <h4 className="text-sm font-bold text-white line-clamp-2">
+                            {task.title}
+                          </h4>
+                          {task.description && (
+                            <p className="text-xs text-zinc-400 mt-1 line-clamp-2">
+                              {task.description}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Clock className="w-3.5 h-3.5 text-zinc-500" />
+                          <span
+                            className={`font-medium text-[11px] ${
+                              relDeadline.isOverdue
+                                ? "text-rose-400"
+                                : relDeadline.hoursRemaining <= 24
+                                ? "text-amber-400"
+                                : "text-zinc-400"
+                            }`}
+                          >
+                            {relDeadline.text}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-zinc-900 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleSetStatus(task, "TODO")}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-400 hover:text-white hover:bg-zinc-800"
+                            title="Kembalikan ke Todo"
+                          >
+                            <ArrowLeft className="w-3 h-3" />
+                            <span>Todo</span>
+                          </button>
+
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleOpenEditModal(task)}
+                              className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800"
+                              title="Edit"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSetStatus(task, "COMPLETED")}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-600/20 text-emerald-300 hover:bg-emerald-600 hover:text-white transition-all border border-emerald-500/30"
+                              title="Tandai selesai"
+                            >
+                              <span>Selesai</span>
+                              <CheckCircle2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+              )}
+            </div>
+          </div>
+
+          {/* KOLOM 3: COMPLETED */}
+          <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                <h3 className="font-bold text-sm text-zinc-200">Selesai</h3>
+              </div>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-950/60 text-emerald-300 font-semibold border border-emerald-800/40">
+                {tasks.filter((t) => t.status === "COMPLETED").length}
+              </span>
+            </div>
+
+            <div className="space-y-3 min-h-[160px]">
+              {tasks.filter((t) => t.status === "COMPLETED").length === 0 ? (
+                <div className="py-10 text-center text-xs text-zinc-500 border border-dashed border-zinc-800/60 rounded-xl">
+                  Belum ada tugas selesai
+                </div>
+              ) : (
+                tasks
+                  .filter((t) => t.status === "COMPLETED")
+                  .map((task) => {
+                    return (
+                      <div
+                        key={task.id}
+                        className="bg-zinc-950/50 border border-zinc-900 opacity-75 hover:opacity-100 rounded-xl p-3.5 space-y-3 shadow-sm transition-all"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-md text-white"
+                            style={{ backgroundColor: task.course.color || "#6366f1" }}
+                          >
+                            {task.course.name}
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-800/40">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Selesai
+                          </span>
+                        </div>
+
+                        <div>
+                          <h4 className="text-sm font-bold text-zinc-400 line-through">
+                            {task.title}
+                          </h4>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-zinc-900 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleSetStatus(task, "TODO")}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-400 hover:text-white hover:bg-zinc-800"
+                            title="Buka kembali tugas ini"
+                          >
+                            <ArrowLeft className="w-3 h-3" />
+                            <span>Buka Kembali</span>
+                          </button>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleDeleteTask(task.id, task.title)}
+                              className="p-1 rounded text-rose-400 hover:text-rose-300 hover:bg-rose-950/40"
+                              title="Hapus"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+              )}
+            </div>
+          </div>
         </div>
       )}
 
