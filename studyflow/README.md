@@ -161,3 +161,24 @@ datasource db {
    - **Next.js 16 (App Router)** dengan arsitektur REST API terpadu.
    - **Stateless JWT Auth** dengan perlindungan cookie *HTTP-Only* dan *Sliding Window Rate Limiter*.
    - **Prisma ORM** yang fleksibel (*Zero-Downtime Migration* dari SQLite lokal ke cloud PostgreSQL).
+
+---
+
+## 📋 6. Proses Pengembangan
+
+### Pembagian kontribusi: (maks. 100 kata)
+Pengembangan StudyFlow dibagi secara terstruktur ke dalam tiga fokus utama:
+1. **Frontend & UI/UX**: Merancang antarmuka responsif menggunakan Next.js 16 (App Router), Tailwind CSS v4, dan Lucide Icons untuk landing page interaktif, dashboard analitik, dan manajemen tugas.
+2. **Backend & Database**: Mengembangkan skema database Prisma ORM, REST API, sistem autentikasi aman berbasis stateless JWT (`jose`), password hashing (`bcryptjs`), dan proteksi route guard.
+3. **Logika Bisnis & Integrasi**: Mengimplementasikan algoritma auto-prioritas tugas berbasis sisa waktu, formula kalkulator prediksi nilai UAS, serta integrasi webhook notifikasi otomatis bot Telegram.
+
+### Tantangan utama: (maks. 75 kata)
+Tantangan utama meliputi perancangan formula matematis prediktor nilai UAS yang harus fleksibel terhadap bobot dinamis komponen perkuliahan, penentuan auto-prioritas tugas secara akurat saat mendekati tenggat waktu, serta pengiriman notifikasi pengingat via Telegram Bot ke banyak mahasiswa secara personal tanpa menggunakan server worker eksternal berbayar. Selain itu, integrasi Next.js 16 dan Tailwind CSS v4 memerlukan penyesuaian konvensi arsitektur dan penanganan tipe TypeScript yang ketat.
+
+### Solusi atas tantangan: (maks. 100 kata)
+Solusi yang diterapkan:
+1. **Formula Invers Bobot**: Mengembangkan fungsi prediksi inversi linear yang memvalidasi batas kelayakan nilai (0–100) secara transparan.
+2. **Algoritma Waktu Relatif**: Memanfaatkan fungsi utilitas kalkulasi selisih jam deadline untuk klasifikasi prioritas otomatis (Urgent, High, Medium, Low) tanpa beban komputasi berat.
+3. **Penyimpanan Chat ID Personal**: Menyimpan Telegram Chat ID unik pada profil pengguna di database SQLite/PostgreSQL melalui Prisma, sehingga satu bot sentral dapat mendistribusikan notifikasi personal via REST endpoint.
+4. **Konfigurasi Strict TypeScript**: Menerapkan validasi skema data Zod di seluruh rute API untuk menjamin kestabilan sistem.
+
