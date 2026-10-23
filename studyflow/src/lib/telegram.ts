@@ -35,6 +35,14 @@ export async function sendTelegramMessage(chatId: string, text: string): Promise
 }
 
 /**
+ * Membersihkan karakter khusus Markdown v1 Telegram (*, _, `, [) agar pesan tidak gagal kirim (400 Bad Request)
+ */
+export function escapeTelegramMarkdown(text: string): string {
+  if (!text) return "";
+  return text.replace(/([*_`\[\]])/g, "\\$1");
+}
+
+/**
  * Mengirim notifikasi pengingat batas waktu tugas (Deadline Reminder)
  */
 export async function sendTaskReminder(
@@ -54,11 +62,15 @@ export async function sendTaskReminder(
     ? "*PERINGATAN: TUGAS MELEWATI TENGGAT WAKTU!*"
     : "*PENGINGAT DEADLINE MENDEKATI!*";
 
+  const safeStudentName = escapeTelegramMarkdown(params.studentName);
+  const safeTaskTitle = escapeTelegramMarkdown(params.taskTitle);
+  const safeCourseName = escapeTelegramMarkdown(params.courseName);
+
   const message =
     `${headerIcon} ${statusTitle}\n\n` +
-    `Halo *${params.studentName}*, sistem mendeteksi tugas kuliah yang butuh perhatianmu:\n\n` +
-    `📝 *Tugas:* ${params.taskTitle}\n` +
-    `📚 *Mata Kuliah:* ${params.courseName}\n` +
+    `Halo *${safeStudentName}*, sistem mendeteksi tugas kuliah yang butuh perhatianmu:\n\n` +
+    `📝 *Tugas:* ${safeTaskTitle}\n` +
+    `📚 *Mata Kuliah:* ${safeCourseName}\n` +
     `⏰ *Batas Waktu:* ${params.deadlineFormatted}\n` +
     `⏳ *Sisa Waktu:* ${params.relativeText}\n` +
     `🔥 *Prioritas:* ${params.priority}\n\n` +
@@ -86,9 +98,11 @@ export async function sendDailyScheduleReminder(
     }>;
   }
 ): Promise<boolean> {
+  const safeStudentName = escapeTelegramMarkdown(params.studentName);
+
   if (params.lectures.length === 0) {
     const freeMessage =
-      `🌅 *SELAMAT PAGI, ${params.studentName.toUpperCase()}!* ☕\n\n` +
+      `🌅 *SELAMAT PAGI, ${safeStudentName.toUpperCase()}!* ☕\n\n` +
       `Hari ini (${params.dayName}) kamu *bebas dari jadwal kuliah*!\n` +
       `Gunakan waktu ini untuk beristirahat atau mencicil tugas mandiri di StudyFlow.`;
     return await sendTelegramMessage(chatId, freeMessage);
@@ -96,15 +110,17 @@ export async function sendDailyScheduleReminder(
 
   let lectureList = "";
   params.lectures.forEach((lec, idx) => {
+    const safeName = escapeTelegramMarkdown(lec.name);
+    const safeRoom = escapeTelegramMarkdown(lec.room || "Ruang Kelas");
     lectureList +=
-      `\n${idx + 1}. *${lec.name}* (${lec.credits} SKS)\n` +
+      `\n${idx + 1}. *${safeName}* (${lec.credits} SKS)\n` +
       `   ⏰ ${lec.startTime} - ${lec.endTime}\n` +
-      `   📍 ${lec.room || "Ruang Kelas"}\n`;
+      `   📍 ${safeRoom}\n`;
   });
 
   const message =
     `🌅 *JADWAL KULIAH HARI INI (${params.dayName.toUpperCase()})* 🎓\n\n` +
-    `Semangat beraktivitas, *${params.studentName}*! Berikut jadwal kuliahmu hari ini:\n` +
+    `Semangat beraktivitas, *${safeStudentName}*! Berikut jadwal kuliahmu hari ini:\n` +
     lectureList +
     `\nBuka dashboard StudyFlow untuk melihat detail:\n` +
     `http://localhost:3000/dashboard`;

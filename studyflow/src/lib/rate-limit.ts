@@ -15,11 +15,22 @@ export interface RateLimitOptions {
   windowMs: number;   // Durasi waktu jendela dalam milidetik (contoh: 60.000 ms = 1 menit)
 }
 
+function cleanupExpired(now: number) {
+  if (rateLimitMap.size > 200) {
+    for (const [key, val] of rateLimitMap.entries()) {
+      if (now > val.resetAt) {
+        rateLimitMap.delete(key);
+      }
+    }
+  }
+}
+
 export function rateLimit(
   identifier: string,
   options: RateLimitOptions = { limit: 5, windowMs: 60 * 1000 }
 ): { success: boolean; limit: number; remaining: number; resetAt: number } {
   const now = Date.now();
+  cleanupExpired(now);
   const record = rateLimitMap.get(identifier);
 
   // Jika belum ada atau jendela waktu sudah kadaluarsa

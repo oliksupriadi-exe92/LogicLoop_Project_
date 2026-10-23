@@ -50,6 +50,10 @@ export function getRelativeDeadline(deadlineInput: Date | string): {
   hoursRemaining: number;
 } {
   const deadline = typeof deadlineInput === "string" ? new Date(deadlineInput) : deadlineInput;
+  if (isNaN(deadline.getTime())) {
+    return { text: "Tanggal tidak valid", isOverdue: false, hoursRemaining: 0 };
+  }
+
   const now = new Date();
   const diffMs = deadline.getTime() - now.getTime();
   const diffHours = Math.round(diffMs / (1000 * 60 * 60));
@@ -86,6 +90,10 @@ export function getRelativeDeadline(deadlineInput: Date | string): {
  */
 export function calculateAutoPriority(deadlineInput: Date | string): Priority {
   const deadline = typeof deadlineInput === "string" ? new Date(deadlineInput) : deadlineInput;
+  if (isNaN(deadline.getTime())) {
+    return "MEDIUM";
+  }
+
   const now = new Date();
   const diffHours = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
 
@@ -98,6 +106,23 @@ export function calculateAutoPriority(deadlineInput: Date | string): Priority {
   } else {
     return "LOW";
   }
+}
+
+/**
+ * Format objek Date ke format string untuk input datetime-local HTML (YYYY-MM-DDTHH:mm)
+ * Mempertahankan zona waktu lokal pengguna dan mencegah pergeseran zona waktu akibat toISOString()
+ */
+export function formatToLocalDatetimeString(dateInput: Date | string): string {
+  const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+  if (isNaN(date.getTime())) return "";
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const y = date.getFullYear();
+  const m = pad(date.getMonth() + 1);
+  const d = pad(date.getDate());
+  const hh = pad(date.getHours());
+  const mm = pad(date.getMinutes());
+  return `${y}-${m}-${d}T${hh}:${mm}`;
 }
 
 /**
@@ -159,7 +184,19 @@ export function predictRequiredExamScore(
   isAchievable: boolean;
   message: string;
 } {
-  const currentTotal = knownComponents.reduce(
+  if (examWeight <= 0) {
+    return {
+      requiredScore: 0,
+      isAchievable: false,
+      message: "Bobot ujian belum ditentukan atau 0%.",
+    };
+  }
+
+  const validComponents = knownComponents.filter(
+    (c) => typeof c.score === "number" && !isNaN(c.score) && typeof c.weight === "number" && !isNaN(c.weight)
+  );
+
+  const currentTotal = validComponents.reduce(
     (acc, curr) => acc + (curr.score * curr.weight) / 100,
     0
   );
@@ -244,6 +281,14 @@ export function generateICSContent(courses: ICSCourseItem[]): string {
     "X-WR-TIMEZONE:Asia/Jakarta"
   ];
 
+  const escapeICS = (str: string): string => {
+    return (str || "")
+      .replace(/\\/g, "\\\\")
+      .replace(/;/g, "\\;")
+      .replace(/,/g, "\\,")
+      .replace(/\r?\n/g, "\\n");
+  };
+
   courses.forEach((c, idx) => {
     const dayStr = dayMap[c.dayOfWeek] || "MO";
     const [startH, startM] = (c.startTime || "08:00").split(":").map((v) => parseInt(v, 10) || 0);
@@ -266,6 +311,10 @@ export function generateICSContent(courses: ICSCourseItem[]): string {
     const dtEnd = `${y}${m}${d}T${pad(endH)}${pad(endM)}00`;
     const uid = `studyflow-${idx}-${Date.now()}@studyflow.local`;
 
+    const summary = escapeICS(`${c.name}${c.code ? ` (${c.code})` : ""}`);
+    const description = escapeICS(`Dosen: ${c.lecturer || "-"} | Ruangan: ${c.room || "-"}`);
+    const location = escapeICS(c.room || "Ruang Kelas");
+
     icsLines.push(
       "BEGIN:VEVENT",
       `UID:${uid}`,
@@ -273,9 +322,9 @@ export function generateICSContent(courses: ICSCourseItem[]): string {
       `DTSTART;TZID=Asia/Jakarta:${dtStart}`,
       `DTEND;TZID=Asia/Jakarta:${dtEnd}`,
       `RRULE:FREQ=WEEKLY;BYDAY=${dayStr}`,
-      `SUMMARY:${c.name}${c.code ? ` (${c.code})` : ""}`,
-      `DESCRIPTION:Dosen: ${c.lecturer || "-"} | Ruangan: ${c.room || "-"}`,
-      `LOCATION:${c.room || "Ruang Kelas"}`,
+      `SUMMARY:${summary}`,
+      `DESCRIPTION:${description}`,
+      `LOCATION:${location}`,
       "STATUS:CONFIRMED",
       "END:VEVENT"
     );

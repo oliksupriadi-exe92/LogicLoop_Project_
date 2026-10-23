@@ -1,8 +1,8 @@
 # 🎓 StudyFlow — Platform Otomasi Akademik Mahasiswa
 
-> **LogicLoop Collaboration Project** · Branch: `dev` (Active Development & Feature Integration)
+> **LogicLoop Collaboration Project** · Branch: `fix` (Lead: [@biji514](https://github.com/biji514) · Bugfix, Validation & System Stabilization)
 
-![Branch dev](https://img.shields.io/badge/Branch-dev-blue?style=for-the-badge&logo=git)
+![Branch fix](https://img.shields.io/badge/Branch-fix-red?style=for-the-badge&logo=git)
 ![Next.js 16](https://img.shields.io/badge/Next.js-16.4-black?style=for-the-badge&logo=next.js)
 ![React 19](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)
 ![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?style=for-the-badge&logo=tailwind-css)
@@ -14,32 +14,50 @@
 ---
 
 ## 📌 Daftar Isi
-1. [Tentang Proyek & Peran Branch dev](#-tentang-proyek--peran-branch-dev)
-2. [Fitur Utama Terintegrasi](#-fitur-utama-terintegrasi)
-3. [Tech Stack & Arsitektur](#%EF%B8%8F-tech-stack--arsitektur)
-4. [Struktur Branch Repositori](#-struktur-branch-repositori)
-5. [Struktur Direktori Proyek](#-struktur-direktori-proyek)
-6. [Panduan Instalasi & Menjalankan Lokal](#-panduan-instalasi--menjalankan-lokal)
-7. [Kredensial Akun Demo](#-kredensial-akun-demo)
-8. [Daftar Endpoint REST API](#-daftar-endpoint-rest-api)
-9. [Tautan Artefak Proyek](#-5-tautan-artefak-proyek)
-10. [Proses Pengembangan (LogicLoop Team)](#-6-proses-pengembangan)
-11. [Panduan Kontribusi & Git Workflow](#-panduan-kontribusi--git-workflow)
+1. [Tentang Proyek & Peran Branch fix](#-tentang-proyek--peran-branch-fix)
+2. [Rincian Perbaikan Bug & Stabilisasi Sistem (Branch fix)](#-rincian-perbaikan-bug--stabilisasi-sistem-branch-fix)
+3. [Fitur Utama Terintegrasi](#-fitur-utama-terintegrasi)
+4. [Tech Stack & Arsitektur](#%EF%B8%8F-tech-stack--arsitektur)
+5. [Struktur Branch Repositori](#-struktur-branch-repositori)
+6. [Struktur Direktori Proyek](#-struktur-direktori-proyek)
+7. [Panduan Instalasi & Menjalankan Lokal](#-panduan-instalasi--menjalankan-lokal)
+8. [Kredensial Akun Demo](#-kredensial-akun-demo)
+9. [Daftar Endpoint REST API](#-daftar-endpoint-rest-api)
+10. [Tautan Artefak Proyek](#-5-tautan-artefak-proyek)
+11. [Proses Pengembangan (LogicLoop Team)](#-6-proses-pengembangan)
+12. [Panduan Kontribusi & Git Workflow](#-panduan-kontribusi--git-workflow)
 
 ---
 
-## 🌟 Tentang Proyek & Peran Branch `dev`
+## 🌟 Tentang Proyek & Peran Branch `fix`
 
 **StudyFlow** adalah platform manajemen akademik dan otomasi perkuliahan *full-stack* modern yang dirancang untuk mengatasi *academic burnout*, membebaskan mahasiswa dari prokrastinasi, dan memberikan visibilitas penuh terhadap performa perkuliahan.
 
 Platform ini mengintegrasikan penjadwalan kuliah harian, pelacakan tenggat tugas dengan **Auto-Prioritas Cerdas**, **Papan Kanban Interaktif**, **Matriks Jadwal Kuliah Mingguan**, **Prediktor Nilai UAS & IPK**, serta **Notifikasi Pengingat Otomatis via Telegram Bot**.
 
-### Peran Utama Branch `dev`:
-Branch **`dev`** bertindak sebagai **pusat integrasi aktif dan pengujian fitur harian** bagi seluruh pengembang tim LogicLoop:
-* Menggabungkan modul frontend interaktif (Kanban, Matriks Timetable, Ekspor iCal) dari branch `feature`.
-* Mengintegrasikan protokol arsitektur agen deterministik (`.agents/`, `AGENTS.md`, `PIPELINE.md`) dari branch `develop`.
-* Menyinkronkan spesifikasi antarmuka visual Google Stitch (`.stitch/DESIGN.md`) dari branch `main`.
-* Menambahkan peningkatan fitur mandiri: **Kalkulasi Predikat Kelulusan Akademik** (*Cum Laude, Sangat Memuaskan, Memuaskan*) dan **Ekspor Laporan Ringkasan Proyeksi Nilai Akademik (.txt)**.
+### Peran Utama Branch `fix`:
+Branch **`fix`** (dipimpin oleh [@biji514](https://github.com/biji514)) bertindak sebagai **pusat perbaikan bug (*hotfix & bugfix*), audit keandalan, penanganan nilai batas (*edge cases*), dan stabilisasi sistem** pada seluruh ekosistem StudyFlow:
+* Menyelaraskan seluruh integrasi modul dari branch `dev`, `feature`, `develop`, dan `main`.
+* Menutup celah pembagian dengan nol (*division-by-zero*) pada kalkulator prediksi nilai UAS.
+* Memvalidasi masukan tanggal dan menyelaraskan zona waktu lokal (WIB) pada formulir tenggat tugas.
+* Menjamin format ekspor kalender iCal RFC 5545 ter-escape secara aman.
+* Mengamankan webhook bot Telegram dari kegagalan parsing format Markdown.
+* Mengeliminasi potensi kebocoran memori (*memory leak*) pada sistem *in-memory rate limiter*.
+
+---
+
+## 🛠️ Rincian Perbaikan Bug & Stabilisasi Sistem (Branch `fix`)
+
+| No | Modul / Berkas | Masalah / Bug yang Ditemukan | Solusi & Perbaikan yang Diterapkan |
+| :---: | :--- | :--- | :--- |
+| **1** | `studyflow/src/lib/utils.ts` | **Division-by-Zero pada Prediktor Nilai**: Jika komponen ujian (UAS) berbobot 0% atau belum terisi, fungsi kalkulasi membagi dengan nol dan menghasilkan nilai `Infinity` / `NaN`. | Menambahkan *guard clause* `examWeight <= 0` dengan pesan informatif, serta memfilter komponen bernilai null/NaN. |
+| **2** | `studyflow/src/lib/utils.ts` | **Bug "NaN Hari Lagi" pada Tanggal Invalid**: Masukan string tanggal yang rusak menghasilkan selisih `NaN` pada hitung mundur tenggat tugas. | Memvalidasi integritas objek `Date` via `isNaN(date.getTime())` dengan nilai fallback aman. |
+| **3** | `studyflow/src/lib/utils.ts` & `tasks/page.tsx` | **Pergeseran Zona Waktu UTC (Mundur 7 Jam)**: Penggunaan `.toISOString().slice(0, 16)` pada `<input type="datetime-local">` menyebabkan jam tenggat bergeser ke UTC (selisih 7 jam dari WIB). | Membuat fungsi `formatToLocalDatetimeString()` yang mempertahankan jam, menit, dan tanggal lokal pengguna. |
+| **4** | `studyflow/src/app/api/tasks/route.ts` | **Penimpaan Prioritas Pilihan Pengguna**: Prioritas tugas pilihan manual `"MEDIUM"` secara tidak sengaja tertimpa oleh algoritma auto-prioritas. | Memperbaiki kondisi pengecekan agar prioritas yang eksplisit dipilih pengguna selalu dipertahankan. |
+| **5** | `studyflow/src/lib/telegram.ts` | **Kegagalan Kirim Bot Telegram (HTTP 400)**: Nama mahasiswa atau judul tugas yang memuat karakter khusus Markdown (`_`, `*`, `[`, `` ` ``) memicu *entity parse error*. | Mengimplementasikan fungsi sanitasi `escapeTelegramMarkdown()` sebelum teks dikirimkan ke Telegram Bot API. |
+| **6** | `studyflow/src/lib/rate-limit.ts` | **Potensi Memory Leak**: Map cache rate-limiting tidak memiliki mekanisme pembersihan riwayat IP yang sudah kadaluarsa. | Menambahkan fungsi *automatic cleanup* yang membersihkan entri kadaluarsa saat map melebihi ambang batas. |
+| **7** | `studyflow/src/lib/utils.ts` | **Karakter Khusus pada iCal RFC 5545**: Nama dosen atau ruangan yang memuat koma `,` atau titik koma `;` tidak di-escape dan merusak impor kalender. | Mengimplementasikan fungsi *escaping* `escapeICS()` sesuai spesifikasi RFC 5545 untuk Google Calendar & Apple Calendar. |
+| **8** | `studyflow/.env.example` & `.gitignore` | **Absennya Template Konfigurasi**: Tidak ada berkas `.env.example` untuk memandu setup database SQLite, JWT secret, dan bot Telegram. | Membuat `.env.example` komprehensif dan memperbarui `.gitignore` agar berkas contoh dapat dilacak di Git. |
 
 ---
 
@@ -229,17 +247,17 @@ Untuk mencoba langsung seluruh fitur tanpa registrasi manual:
 
 ## 🔄 Panduan Kontribusi & Git Workflow
 
-Untuk menjaga integritas kode pada branch `dev`:
+Untuk menjaga integritas kode pada branch `fix`:
 
-1. **Buat Branch Lokal Baru / Kerjakan di `dev`**:
+1. **Gunakan Branch `fix` Lokal**:
    ```bash
-   git checkout dev
-   git pull origin dev
+   git checkout fix
+   git pull origin fix
    ```
 2. **Format Pesan Komit Semantik (*Conventional Commits*)**:
-   - `feat(dev): <fitur baru>`
-   - `fix(dev): <perbaikan bug>`
-   - `docs(dev): <perubahan dokumentasi>`
-   - `refactor(dev): <peningkatan struktur kode>`
+   - `fix: <deskripsi perbaikan bug>`
+   - `fix(types): <perbaikan tipe TypeScript>`
+   - `fix(api): <perbaikan endpoint REST API>`
+   - `docs(fix): <pembaruan dokumentasi bugfix>`
 3. **Validasi Sebelum Komit**:
-   Pastikan tidak ada error TypeScript dan kode terformat dengan rapi sebelum mengajukan *Pull Request* ke branch `develop` atau `main`.
+   Pastikan tidak ada error sintaks, seluruh penanganan *edge cases* tervalidasi, dan kode terformat dengan rapi sebelum mengajukan *Pull Request* ke branch `develop` atau `main`.

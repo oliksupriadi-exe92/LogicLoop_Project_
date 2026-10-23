@@ -24,7 +24,12 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { calculateAutoPriority, getRelativeDeadline, formatIndonesianDateTime } from "@/lib/utils";
+import {
+  calculateAutoPriority,
+  getRelativeDeadline,
+  formatIndonesianDateTime,
+  formatToLocalDatetimeString,
+} from "@/lib/utils";
 import { Priority, TaskStatus } from "@/types";
 
 interface CourseOption {
@@ -158,7 +163,7 @@ function TasksContent() {
     const defaultDate = new Date();
     defaultDate.setDate(defaultDate.getDate() + 3);
     defaultDate.setHours(23, 59, 0, 0);
-    setDeadline(defaultDate.toISOString().slice(0, 16));
+    setDeadline(formatToLocalDatetimeString(defaultDate));
     setPriority("MEDIUM");
     setStatus("TODO");
     setEditingTaskId(null);
@@ -178,7 +183,7 @@ function TasksContent() {
     setCourseId(t.courseId);
     setTitle(t.title);
     setDescription(t.description || "");
-    setDeadline(new Date(t.deadline).toISOString().slice(0, 16));
+    setDeadline(formatToLocalDatetimeString(t.deadline));
     setPriority(t.priority);
     setStatus(t.status);
     setErrorMessage(null);

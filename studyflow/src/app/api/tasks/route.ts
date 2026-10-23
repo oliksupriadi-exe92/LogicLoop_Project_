@@ -96,10 +96,10 @@ export async function POST(req: NextRequest) {
 
     const deadlineDate = new Date(deadline);
 
-    // OTOMASI: Jika prioritas tidak diatur spesifik, gunakan auto-prioritas dari kedekatan deadline
+    // OTOMASI: Gunakan prioritas yang dipilih pengguna secara eksplisit, atau hitung otomatis jika tidak diatur
     const finalPriority =
-      priority && priority !== "MEDIUM"
-        ? priority
+      body.priority && ["LOW", "MEDIUM", "HIGH", "URGENT"].includes(body.priority)
+        ? body.priority
         : calculateAutoPriority(deadlineDate);
 
     const newTask = await prisma.task.create({
